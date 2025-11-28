@@ -5,7 +5,7 @@ This repository contains my full implementation of Phase 2: Trustworthy Model Re
 
 Phase 2 extends earlier work by adding persistent storage, scalable APIs, and several essential operations that allow artifacts to be registered, queried, listed, searched, and reset. All endpoints conform to the OpenAPI specification provided by the course, and the deployment is handled through AWS SAM, API Gateway (HTTP API), Lambda, and DynamoDB.
 
-Project Overview
+🚀 Project Overview
 
 A trustworthy model registry is essential for tracking machine learning assets, their versions, metadata, and provenance.
 This backend service:
@@ -68,7 +68,7 @@ Performs a regex match on artifact IDs to support flexible retrieval.
 
 Deletes all stored records from DynamoDB — useful for testing and autograder resets.
 
-Architecture Summary
+🏗️ Architecture Summary
 
 The backend is deployed using:
 
@@ -83,7 +83,7 @@ AWS SAM for infrastructure-as-code
 Each API endpoint maps to a dedicated Lambda function under
 backend/lambdas/.
 
-OpenAPI Specification
+📄 OpenAPI Specification
 
 The full API contract is defined by the course staff and included under:
 
@@ -91,7 +91,7 @@ openapi/ece461_fall_2025_openapi_spec.yaml
 
 All endpoints and request/response shapes follow this specification precisely to ensure autograder compliance.
 
-Testing & Autograder
+🧪 Testing & Autograder
 
 The implementation has been fully deployed and tested using:
 
