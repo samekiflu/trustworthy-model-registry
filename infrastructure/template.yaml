@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Trustworthy Model Registry (Phase 2)
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - x86_64
+
+Resources:
+  ############################################
+  # DYNAMODB TABLE (FIXED FOR pk/sk)
+  ############################################
+  RegistryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  ############################################
+  # REGISTER ARTIFACT
+  ############################################
+  RegisterArtifactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../backend/lambdas/register_artifact
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RegistryTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RegistryTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /artifacts
+            Method: POST
+            ApiId: !Ref HttpApi
+
+  ############################################
+  # GET ARTIFACT
+  ############################################
+  GetArtifactFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../backend/lambdas/get_artifact/
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RegistryTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RegistryTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /artifacts/{artifact_type}/{artifact_id}
+            Method: GET
+            ApiId: !Ref HttpApi
+
+  ############################################
+  # LIST ARTIFACTS
+  ############################################
+  ListArtifactsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../backend/lambdas/list_artifacts/
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RegistryTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RegistryTable
+      Events:
+        ApiListAll:
+          Type: HttpApi
+          Properties:
+            Path: /artifacts/{artifact_type}
+            Method: GET
+            ApiId: !Ref HttpApi
+
+  ############################################
+  # REGEX SEARCH
+  ############################################
+  RegexSearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../backend/lambdas/regex_search/
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RegistryTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RegistryTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /artifact/byRegEx
+            Method: POST
+            ApiId: !Ref HttpApi
+
+  ############################################
+  # RESET REGISTRY
+  ############################################
+  ResetRegistryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../backend/lambdas/reset_registry/
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref RegistryTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RegistryTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /reset
+            Method: POST
+            ApiId: !Ref HttpApi
+
+  ############################################
+  # HEALTH CHECK
+  ############################################
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../backend/lambdas/health/
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /health
+            Method: GET
+            ApiId: !Ref HttpApi
+
+  ############################################
+  # HTTP API
+  ############################################
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+        AllowOrigins:
+          - "*"
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for the HTTP API
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
